@@ -1,0 +1,94 @@
+---
+- hosts: localhost
+  connection: local
+  become: yes
+  become_user: root
+  tasks:
+    - name: Install curl
+      apt:
+        name: 
+          - curl
+          - git
+          - wget
+          - fish
+          - terminator
+
+    - name: docker
+      shell:
+        cmd: |
+          if ! which docker; then
+            curl -fsSL https://get.docker.com -o get-docker.sh
+            bash ./get-docker.sh
+            usermod -aG docker trey;
+          fi
+
+    - name: rancher desktop
+      shell:
+        cmd: |
+          if ! which rancher-desktop; then
+            curl -s https://download.opensuse.org/repositories/isv:/Rancher:/stable/deb/Release.key | gpg --dearmor | dd status=none of=/usr/share/keyrings/isv-rancher-stable-archive-keyring.gpg
+            echo 'deb [signed-by=/usr/share/keyrings/isv-rancher-stable-archive-keyring.gpg] https://download.opensuse.org/repositories/isv:/Rancher:/stable/deb/ ./' | dd status=none of=/etc/apt/sources.list.d/isv-rancher-stable.list
+            apt update
+            apt install -y rancher-desktop
+          fi
+
+    - name: helm
+      shell:
+        cmd: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  
+    - name: helm diff
+      shell:
+        cmd: |
+          if ! helm diff --help; then
+            helm plugin install https://github.com/databus23/helm-diff
+          fi
+  
+    - name: helmfile
+      shell:
+        cmd: |
+          if ! which helmfile; then
+            wget https://github.com/roboll/helmfile/releases/latest/download/helmfile_linux_amd64
+            chmod +x helmfile_linux_amd64
+            mv helmfile_linux_amd64 /usr/bin/helmfile
+          fi
+
+    - name: k9s
+      shell:
+        cmd: |
+          if ! which k9s; then
+            wget https://github.com/derailed/k9s/releases/latest/download/k9s_Linux_x86_64.tar.gz
+            tar -xvf k9s_Linux_x86_64.tar.gz
+            chmod +x k9s
+            mv k9s /usr/bin/
+          fi
+
+    - name: chrome
+      shell:
+        cmd: |
+          if ! which k9s; then
+            wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+            apt install ./google-chrome-stable_current_amd64.deb
+          fi
+
+    - name: vscode
+      shell:
+        cmd: |
+          if ! which k9s; then
+            wget https://go.microsoft.com/fwlink/?LinkID=760868
+            apt install *code*.deb
+          fi
+
+    - name: setup workspace and clone all repos
+      shell:
+        cmd: |
+          mkdir /home/trey/workspace/ || true
+          su trey
+          cd /home/trey/workspace
+          git config --global url."https://".insteadOf git://
+          CNTX={users}; NAME={tgh19}; PAGE=1
+          curl "https://api.github.com/$CNTX/$NAME/repos?page=$PAGE&per_page=100" |
+            grep -e 'git_url*' |
+            cut -d \" -f 4 |
+            xargs -L1 git clone || true
+
