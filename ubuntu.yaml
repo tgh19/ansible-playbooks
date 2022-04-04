@@ -4,7 +4,7 @@
   become: yes
   become_user: root
   tasks:
-    - name: Install curl
+    - name: Install common utils
       apt:
         name: 
           - curl
@@ -12,6 +12,7 @@
           - wget
           - fish
           - terminator
+          - make
 
     - name: docker
       shell:
